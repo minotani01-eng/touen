@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登園記録</title>
+<style>
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  font-size: 22px;
+}
+
+#buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+button {
+  padding: 25px;
+  font-size: 22px;
+  border: none;
+  border-radius: 10px;
+}
+
+.arrived {
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<h2>登園記録</h2>
+<div id="buttons"></div>
+
+<script>
+const users = [
+  "泉森 都也","伊藤 義巳","今吉 雅也","江指 浩明","岡 健史",
+  "岡 大介","岡本 正章","神楽 祐也","加地 美里","金子 真樹",
+  "亀井 俊佑","川崎 高嶺","川崎 佑貴","清末 真央","小林 啓介",
+  "後藤 幸太","後藤 真也","笹田 顕","坂本 紀子","笹山 昌昭",
+  "島 杏奈","島田 マイケル","霜川 愛衣","杉田 一生","住野 浩子",
+  "妹尾 英嗣","高橋 瑛実","高橋 賢人","田中 利明","津田 達哉",
+  "常見 友理","戸川 円","中井 一郎","中川 雄介","中谷 優雅",
+  "中野 心寧","中村 納","長田 政彦","野村 勇太","樋口 智裕",
+  "平田 博子","藤原 祥真","古谷 圭一","前川 七海","真崎 栄作",
+  "松本 春菜","三宅 拓","矢野 涼一","山下 裕加","吉野 浩司",
+  "李 永賢"
+];
+
+const scriptURL = "YOUR_APPS_SCRIPT_URL";
+
+function getToday() {
+  return new Date().toLocaleDateString('ja-JP');
+}
+
+function roundToFiveMinutes(date) {
+  const minutes = date.getMinutes();
+  const rounded = Math.floor(minutes / 5) * 5;
+  date.setMinutes(rounded);
+  date.setSeconds(0);
+  return date;
+}
+
+// 日付が変わったら登園記録をリセット
+function resetIfNewDay() {
+  const savedDate = localStorage.getItem("arrivalDate");
+  const today = getToday();
+
+  if (savedDate !== today) {
+    localStorage.setItem("arrivalDate", today);
+    localStorage.removeItem("arrivedUsers");
+  }
+}
+
+function saveArrival(name) {
+  let arrivedUsers = JSON.parse(localStorage.getItem("arrivedUsers")) || [];
+  if (!arrivedUsers.includes(name)) {
+    arrivedUsers.push(name);
+    localStorage.setItem("arrivedUsers", JSON.stringify(arrivedUsers));
+  }
+}
+
+function isArrived(name) {
+  let arrivedUsers = JSON.parse(localStorage.getItem("arrivedUsers")) || [];
+  return arrivedUsers.includes(name);
+}
+
+function recordArrival(name, button) {
+  let now = roundToFiveMinutes(new Date());
+
+  const data = {
+    date: getToday(),
+    name: name,
+    time: now.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    status: "登園"
+  };
+
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+
+  saveArrival(name);
+  button.classList.add("arrived");
+
+  alert(`${data.date} ${data.name} ${data.time} ${data.status}`);
+}
+
+resetIfNewDay();
+
+const container = document.getElementById("buttons");
+
+users.forEach(name => {
+  const btn = document.createElement("button");
+  btn.textContent = name;
+
+  if (isArrived(name)) {
+    btn.classList.add("arrived");
+  }
+
+  btn.onclick = () => recordArrival(name, btn);
+  container.appendChild(btn);
+});
+</script>
+
+</body>
+</html>
